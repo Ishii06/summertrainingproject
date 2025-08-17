@@ -27,18 +27,32 @@ router.get("/", authMiddleware, async (req, res) => {
       averageMood = (totalMood / journals.length).toFixed(1);
     }
 
-    // Streak calculation
-    let streak = 0;
-    if (journals.length > 0) {
-      const dates = journals.map(j => j.dateOnly).sort((a, b) => new Date(b) - new Date(a));
-      let today = new Date().toISOString().split("T")[0];
-      for (let date of dates) {
-        if (date === today) {
-          streak++;
-          today = new Date(new Date(today) - 86400000).toISOString().split("T")[0];
-        } else if (date < today) break;
-      }
+let streak = 0;
+
+if (journals.length > 0) {
+  const dates = journals
+    .map(j => new Date(j.dateOnly))   // turn into Date objects
+    .sort((a, b) => b - a);
+
+  let today = new Date(); // JS Date object
+
+  for (let d of dates) {
+    // compare ONLY the date part (ignore time)
+    if (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    ) {
+      streak++;
+      // move today back one day
+      today.setDate(today.getDate() - 1);
+    } else if (d < today) {
+      break;
     }
+  }
+}
+
+
 
     // Community posts by username
     const communityPosts = await Post.countDocuments({ postedBy: user.name });
