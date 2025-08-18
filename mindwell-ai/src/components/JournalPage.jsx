@@ -5,13 +5,14 @@ import AuthContext from "../context/AuthContext.jsx";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL;
 
 // Assets from HomePage theme
 import BlobClay from "../components/assets/blob-clay.svg";
 import BlobSage from "../components/assets/blob-sage.svg";
 import PaperTexture from "../components/assets/beige-paper.png";
 
-axios.defaults.baseURL = "http://localhost:5000";
+axios.defaults.baseURL = `${API_URL}`;
 
 const moods = ["😊", "😔", "😡", "😱", "😴", "❤"];
 

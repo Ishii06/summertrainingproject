@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+const API_URL = import.meta.env.VITE_API_URL;
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion"; // Add motion for animations
 import AuthContext from "../context/AuthContext"; // Corrected import path
@@ -53,7 +54,7 @@ const CommunityPage = () => {
   // -------------------- Fetch posts --------------------
   const fetchPosts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/community");
+      const res = await fetch(`${API_URL}/api/community`);
       const data = await res.json();
       const formatted = data.map((post) => ({ ...post, id: post._id }));
       setPosts(formatted);
@@ -76,7 +77,7 @@ const CommunityPage = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/community", {
+      const res = await fetch(`${API_URL}/api/community`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -112,7 +113,7 @@ const CommunityPage = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/community/${postId}/comments`,
+        `${API_URL}/api/community/${postId}/comments`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -153,7 +154,7 @@ const CommunityPage = () => {
     }
 
     try {
-      await fetch(`http://localhost:5000/api/community/${postId}`, {
+      await fetch(`${API_URL}/api/community/${postId}`, {
         method: "DELETE",
       });
       setPosts((prev) => prev.filter((post) => post._id !== postId));
@@ -177,7 +178,7 @@ const CommunityPage = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/community/${postId}/upvote`,
+        `${API_URL}/api/community/${postId}/upvote`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
