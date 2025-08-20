@@ -1,3 +1,4 @@
+import CryptoJS from "crypto-js";
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,6 +14,7 @@ import BlobSage from "../components/assets/blob-sage.svg";
 import PaperTexture from "../components/assets/beige-paper.png";
 
 axios.defaults.baseURL = `${API_URL}`;
+const SECRET_KEY = import.meta.env.VITE_SECRET_KEY; // 🔑 keep in .env
 
 const moods = ["😊", "😔", "😡", "😱", "😴", "❤"];
 
@@ -42,12 +44,22 @@ const JournalPage = () => {
         });
         if (!Array.isArray(res.data)) return;
         setEntries(
-          res.data.map((e) => ({
-            ...e,
-            id: e._id,
-            date: new Date(e.createdAt).toLocaleString(),
-            dateOnly: new Date(e.createdAt).toDateString(),
-          }))
+          res.data.map((e) => {
+            // 🔓 decrypt text here
+            let decryptedText = "";
+            try {
+              decryptedText = CryptoJS.AES.decrypt(e.text, SECRET_KEY).toString(CryptoJS.enc.Utf8);
+            } catch (err) {
+              decryptedText = e.text; // fallback
+            }
+            return {
+              ...e,
+              text: decryptedText,
+              id: e._id,
+              date: new Date(e.createdAt).toLocaleString(),
+              dateOnly: new Date(e.createdAt).toDateString(),
+            };
+          })
         );
       } catch (err) {
         console.error("Error fetching entries:", err);
@@ -69,9 +81,12 @@ const JournalPage = () => {
       return;
     }
 
+    // 🔒 encrypt before saving
+    const encryptedText = CryptoJS.AES.encrypt(entry, SECRET_KEY).toString();
+
     const tempEntry = {
       id: Date.now(),
-      text: entry,
+      text: entry, // keep plaintext for immediate UI
       mood,
       date: new Date().toLocaleString(),
       dateOnly: new Date().toDateString(),
@@ -85,15 +100,25 @@ const JournalPage = () => {
       const res = await axios.post(
         "/api/journal",
         {
-          text: tempEntry.text,
+          text: encryptedText, // send encrypted text
           mood: tempEntry.mood,
           dateOnly: tempEntry.dateOnly,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // 🔓 decrypt the response text
+      let decryptedText = "";
+      try {
+        decryptedText = CryptoJS.AES.decrypt(res.data.text, SECRET_KEY).toString(CryptoJS.enc.Utf8);
+      } catch (err) {
+        decryptedText = tempEntry.text;
+      }
+
       setEntries((prev) => [
         {
           ...res.data,
+          text: decryptedText,
           id: res.data._id,
           date: new Date(res.data.createdAt).toLocaleString(),
           dateOnly: new Date(res.data.createdAt).toDateString(),
@@ -129,7 +154,7 @@ const JournalPage = () => {
     try {
       const res = await axios.post(
         "/api/ai/analyze",
-        { journalText: entry },
+        { journalText: entry }, // keep plaintext for AI
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -222,9 +247,6 @@ const JournalPage = () => {
                   rows={5}
                 />
 
-                {/* Info box below textarea */}
-                
-
                 {errorMessage && (
                   <p className="text-red-500 text-sm">{errorMessage}</p>
                 )}
@@ -271,11 +293,10 @@ const JournalPage = () => {
                   </button>
                 </div>
                 <div className="text-left">
-  <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm shadow-sm mb-2">
-    🔒 Your journal entries are securely stored and cannot be accessed by anyone else.
-  </div>
-</div>
-
+                  <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm shadow-sm mb-2">
+                    🔒 Your journal entries are securely stored and cannot be accessed by anyone else.
+                  </div>
+                </div>
               </form>
             </motion.div>
 
